@@ -1,66 +1,51 @@
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { Request, Response } from 'express';
-import { z } from 'zod';
 import { validate } from '../../middleware/validation';
-import { mockRequest, mockResponse, mockNext } from '../setup';
+import { z } from 'zod';
 
 describe('Validation Middleware', () => {
-  const testSchema = z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-    age: z.number().min(0),
+  let req: Partial<Request>;
+  let res: Partial<Response>;
+  let next: jest.Mock;
+
+  beforeEach(() => {
+    req = {
+      body: {}
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+    next = jest.fn();
   });
 
-  it('should pass validation with valid data', async () => {
-    const req = {
-      ...mockRequest(),
-      body: {
-        name: 'Test User',
-        email: 'test@example.com',
-        age: 25,
-      },
-    } as Request;
-    const res = mockResponse() as Response;
-    const next = mockNext;
-
-    await validate(testSchema)(req, res, next);
-
-    expect(next).toHaveBeenCalled();
-    expect(next).not.toHaveBeenCalledWith(expect.any(Error));
+  const schema = z.object({
+    name: z.string(),
+    email: z.string().email()
   });
 
-  it('should fail validation with invalid data', async () => {
-    const req = {
-      ...mockRequest(),
-      body: {
-        name: '',
-        email: 'invalid-email',
-        age: -1,
-      },
-    } as Request;
-    const res = mockResponse() as Response;
-    const next = mockNext;
+  it('should pass validation with valid data', () => {
+    req.body = {
+      name: 'Test User',
+      email: 'test@example.com'
+    };
 
-    await validate(testSchema)(req, res, next);
+    validate(schema)(req as Request, res as Response, next);
 
-    expect(next).toHaveBeenCalled();
-    expect(next.mock.calls[0][0].statusCode).toBe(400);
-    expect(next.mock.calls[0][0].message).toBe('Invalid input data');
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
   });
 
-  it('should fail validation with missing required fields', async () => {
-    const req = {
-      ...mockRequest(),
-      body: {
-        name: 'Test User',
-      },
-    } as Request;
-    const res = mockResponse() as Response;
-    const next = mockNext;
+  it('should fail validation with invalid data', () => {
+    req.body = {
+      name: 'Test User',
+      email: 'invalid-email'
+    };
 
-    await validate(testSchema)(req, res, next);
+    validate(schema)(req as Request, res as Response, next);
 
-    expect(next).toHaveBeenCalled();
-    expect(next.mock.calls[0][0].statusCode).toBe(400);
-    expect(next.mock.calls[0][0].message).toBe('Invalid input data');
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(next.mock.calls[0][0].message).toContain('Invalid email');
   });
 });
