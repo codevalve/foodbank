@@ -4,7 +4,46 @@ import { AppError } from '../middleware/errorHandler';
 
 const router = express.Router();
 
-// Get organization details
+/**
+ * @swagger
+ * /api/organizations:
+ *   get:
+ *     tags: [Organizations]
+ *     summary: Get organization details
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Organization details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 name:
+ *                   type: string
+ *                 address:
+ *                   type: string
+ *                 phone:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                 website:
+ *                   type: string
+ *                   format: uri
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - User does not have admin privileges
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/', async (req, res, next) => {
   try {
     const { data, error } = await supabase
@@ -22,7 +61,52 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Update organization details
+/**
+ * @swagger
+ * /api/organizations:
+ *   put:
+ *     tags: [Organizations]
+ *     summary: Update organization details
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - address
+ *               - phone
+ *               - email
+ *             properties:
+ *               name:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               website:
+ *                 type: string
+ *                 format: uri
+ *     responses:
+ *       200:
+ *         description: Organization updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - User does not have admin privileges
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.put('/', async (req, res, next) => {
   try {
     if (req.user!.role !== 'admin') {
@@ -47,7 +131,60 @@ router.put('/', async (req, res, next) => {
   }
 });
 
-// Get organization statistics
+/**
+ * @swagger
+ * /api/organizations/stats:
+ *   get:
+ *     tags: [Organizations]
+ *     summary: Get organization statistics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Organization statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 stats:
+ *                   type: object
+ *                   properties:
+ *                     volunteers:
+ *                       type: integer
+ *                     clients:
+ *                       type: integer
+ *                     inventory:
+ *                       type: integer
+ *                 recentActivity:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       transaction_type:
+ *                         type: string
+ *                       quantity:
+ *                         type: integer
+ *                       transaction_date:
+ *                         type: string
+ *                         format: date-time
+ *                       inventory_items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/stats', async (req, res, next) => {
   try {
     const orgId = req.user!.organization_id;

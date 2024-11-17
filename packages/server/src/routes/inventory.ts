@@ -4,7 +4,65 @@ import { AppError } from '../middleware/errorHandler';
 
 const router = express.Router();
 
-// Get all inventory items
+/**
+ * @swagger
+ * /api/inventory:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: Get all inventory items for the organization
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: low_stock
+ *         schema:
+ *           type: boolean
+ *         description: Filter low stock items
+ *     responses:
+ *       200:
+ *         description: List of inventory items
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     format: uuid
+ *                   name:
+ *                     type: string
+ *                   category:
+ *                     type: string
+ *                   quantity:
+ *                     type: integer
+ *                   unit:
+ *                     type: string
+ *                   minimum_quantity:
+ *                     type: integer
+ *                   expiration_date:
+ *                     type: string
+ *                     format: date-time
+ *                   location:
+ *                     type: string
+ *                   notes:
+ *                     type: string
+ *                   organization_id:
+ *                     type: string
+ *                     format: uuid
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/', async (req, res, next) => {
   try {
     const { data, error } = await supabase
@@ -24,7 +82,30 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Get inventory categories
+/**
+ * @swagger
+ * /api/inventory/categories:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: Get all inventory categories
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of unique inventory categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/categories', async (req, res, next) => {
   try {
     const { data, error } = await supabase
@@ -41,7 +122,56 @@ router.get('/categories', async (req, res, next) => {
   }
 });
 
-// Add new inventory item
+/**
+ * @swagger
+ * /api/inventory:
+ *   post:
+ *     tags: [Inventory]
+ *     summary: Create a new inventory item
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - category_id
+ *               - sku
+ *               - barcode
+ *               - unit_type
+ *               - minimum_stock
+ *             properties:
+ *               name:
+ *                 type: string
+ *               category_id:
+ *                 type: string
+ *               sku:
+ *                 type: string
+ *               barcode:
+ *                 type: string
+ *               unit_type:
+ *                 type: string
+ *               minimum_stock:
+ *                 type: integer
+ *               description:
+ *                 type: string
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Inventory item created successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal Server Error
+ */
 router.post('/', async (req, res, next) => {
   try {
     const {
@@ -77,7 +207,46 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// Record inventory transaction
+/**
+ * @swagger
+ * /api/inventory/transaction:
+ *   post:
+ *     tags: [Inventory]
+ *     summary: Record an inventory transaction
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - item_id
+ *               - transaction_type
+ *               - quantity
+ *               - notes
+ *             properties:
+ *               item_id:
+ *                 type: string
+ *               transaction_type:
+ *                 type: string
+ *               quantity:
+ *                 type: integer
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Inventory transaction recorded successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal Server Error
+ */
 router.post('/transaction', async (req, res, next) => {
   try {
     const { item_id, transaction_type, quantity, notes } = req.body;
@@ -103,7 +272,87 @@ router.post('/transaction', async (req, res, next) => {
   }
 });
 
-// Get inventory item details with transaction history
+/**
+ * @swagger
+ * /api/inventory/{id}:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: Get inventory item details with transaction history
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Inventory Item ID
+ *     responses:
+ *       200:
+ *         description: Inventory item details with transaction history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 name:
+ *                   type: string
+ *                 category:
+ *                   type: string
+ *                 quantity:
+ *                   type: integer
+ *                 unit:
+ *                   type: string
+ *                 minimum_quantity:
+ *                   type: integer
+ *                 expiration_date:
+ *                   type: string
+ *                   format: date-time
+ *                 location:
+ *                   type: string
+ *                 notes:
+ *                   type: string
+ *                 organization_id:
+ *                   type: string
+ *                   format: uuid
+ *                 current_stock:
+ *                   type: integer
+ *                 recent_transactions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       item_id:
+ *                         type: string
+ *                         format: uuid
+ *                       transaction_type:
+ *                         type: string
+ *                       quantity:
+ *                         type: integer
+ *                       notes:
+ *                         type: string
+ *                       user_id:
+ *                         type: string
+ *                         format: uuid
+ *                       transaction_date:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Inventory item not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/:id', async (req, res, next) => {
   try {
     const [itemResult, transactionsResult] = await Promise.all([
@@ -146,7 +395,66 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// Update inventory item
+/**
+ * @swagger
+ * /api/inventory/{id}:
+ *   put:
+ *     tags: [Inventory]
+ *     summary: Update an inventory item
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Inventory Item ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - category_id
+ *               - sku
+ *               - barcode
+ *               - unit_type
+ *               - minimum_stock
+ *             properties:
+ *               name:
+ *                 type: string
+ *               category_id:
+ *                 type: string
+ *               sku:
+ *                 type: string
+ *               barcode:
+ *                 type: string
+ *               unit_type:
+ *                 type: string
+ *               minimum_stock:
+ *                 type: integer
+ *               description:
+ *                 type: string
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Inventory item updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Inventory item not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.put('/:id', async (req, res, next) => {
   try {
     const {
@@ -184,7 +492,58 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-// Get low stock alerts
+/**
+ * @swagger
+ * /api/inventory/alerts/low-stock:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: Get low stock alerts
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of low stock items
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     format: uuid
+ *                   name:
+ *                     type: string
+ *                   category:
+ *                     type: string
+ *                   quantity:
+ *                     type: integer
+ *                   unit:
+ *                     type: string
+ *                   minimum_quantity:
+ *                     type: integer
+ *                   expiration_date:
+ *                     type: string
+ *                     format: date-time
+ *                   location:
+ *                     type: string
+ *                   notes:
+ *                     type: string
+ *                   organization_id:
+ *                     type: string
+ *                     format: uuid
+ *                   current_stock:
+ *                     type: integer
+ *                   shortage:
+ *                     type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/alerts/low-stock', async (req, res, next) => {
   try {
     const { data: items, error } = await supabase
