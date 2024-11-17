@@ -1,0 +1,54 @@
+version: "3.8"
+services:
+  studio:
+    image: supabase/studio:latest
+    restart: unless-stopped
+    ports:
+      - "54333:3000"
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEFAULT_ORGANIZATION: foodbank
+      DEFAULT_PROJECT: foodbank-local
+
+  db:
+    image: supabase/postgres:15.1.0.117
+    restart: unless-stopped
+    ports:
+      - "54332:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_DB: postgres
+    volumes:
+      - ./volumes/db:/var/lib/postgresql/data
+
+  kong:
+    image: kong:2.8.1
+    restart: unless-stopped
+    ports:
+      - "54331:8000"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+    volumes:
+      - ./volumes/kong:/var/lib/kong
+
+  meta:
+    image: supabase/postgres-meta:v0.84.0
+    restart: unless-stopped
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+  postgrest:
+    image: postgrest/postgrest:v11.1.0
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: anon
