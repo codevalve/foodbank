@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import { createClient } from '@supabase/supabase-js';
 import organizationRoutes from './routes/organizations';
 import userRoutes from './routes/users';
@@ -9,6 +11,7 @@ import volunteerRoutes from './routes/volunteers';
 import clientRoutes from './routes/clients';
 import { errorHandler } from './middleware/errorHandler';
 import { authMiddleware } from './middleware/auth';
+import { apiLimiter, authLimiter } from './middleware/rateLimit';
 
 // Load environment variables
 dotenv.config();
@@ -22,10 +25,20 @@ export const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
-// Middleware
+// Security middleware
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Logging
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
+
+// Rate limiting
+app.use('/api/', apiLimiter);
+app.use('/api/auth', authLimiter);
 
 // Auth middleware for protected routes
 app.use(authMiddleware);
@@ -45,6 +58,10 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+export default app;
