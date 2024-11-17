@@ -19,7 +19,7 @@ import { apiLimiter, authLimiter } from './middleware/rateLimit';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4545;
 
 // Initialize Supabase client
 export const supabase = createClient(
@@ -69,6 +69,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+// API Documentation available at http://localhost:${PORT}/api-docs
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
