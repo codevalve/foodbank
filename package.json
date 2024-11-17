@@ -1,0 +1,23 @@
+{
+  "name": "foodbank",
+  "version": "0.1.0",
+  "description": "An application to manage a food bank",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install",
+    "release": "standard-version"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@commitlint/cli": "^17.0.0",
+    "@commitlint/config-conventional": "^17.0.0",
+    "husky": "^8.0.0",
+    "standard-version": "^9.0.0"
+  }
+}
