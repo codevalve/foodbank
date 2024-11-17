@@ -1,0 +1,6 @@
+theme: jekyll-theme-cayman
+title: Food Bank Inventory Management
+description: A modern solution for food bank inventory management
+show_downloads: true
+github:
+  repository_url: https://github.com/codevalve/foodbank

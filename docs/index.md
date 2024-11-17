@@ -1,0 +1,94 @@
+---
+layout: default
+title: Food Bank Inventory Management System
+description: A modern, efficient inventory management system for food banks
+---
+
+<div class="bg-gray-100 min-h-screen">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="text-center">
+      <h1 class="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
+        Food Bank Inventory Management
+      </h1>
+      <p class="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+        A comprehensive solution for managing food bank resources efficiently and effectively.
+      </p>
+    </div>
+
+    <div class="mt-16">
+      <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <img src="images/inventory-dashboard.png" alt="Inventory Dashboard" class="w-full object-cover">
+        <div class="p-6">
+          <h2 class="text-2xl font-semibold text-gray-900">Modern Inventory Management</h2>
+          <p class="mt-4 text-gray-600">Experience a streamlined approach to managing food bank inventory with our intuitive dashboard and powerful features.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-16 grid gap-8 md:grid-cols-3">
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="text-blue-600 mb-4">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900">Real-time Tracking</h3>
+        <p class="mt-4 text-gray-600">Monitor stock levels, receive alerts, and manage inventory in real-time with our powerful dashboard.</p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="text-blue-600 mb-4">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900">Smart Analytics</h3>
+        <p class="mt-4 text-gray-600">Make informed decisions with detailed insights into inventory trends and usage patterns.</p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="text-blue-600 mb-4">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900">Multi-tenant Support</h3>
+        <p class="mt-4 text-gray-600">Manage multiple locations with ease using our multi-tenant architecture.</p>
+      </div>
+    </div>
+
+    <div class="mt-16 text-center">
+      <a href="https://github.com/codevalve/foodbank" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+        View on GitHub
+      </a>
+    </div>
+
+    <div class="mt-16 border-t border-gray-200 pt-8">
+      <div class="text-base text-gray-500 text-center">
+        <p>Built with modern web technologies:</p>
+        <div class="mt-4 flex justify-center space-x-4">
+          <span>React</span>
+          <span>•</span>
+          <span>TypeScript</span>
+          <span>•</span>
+          <span>Tailwind CSS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.bg-gray-100 { background-color: #f3f4f6; }
+.bg-white { background-color: white; }
+.text-gray-900 { color: #111827; }
+.text-gray-600 { color: #4b5563; }
+.text-gray-500 { color: #6b7280; }
+.text-blue-600 { color: #2563eb; }
+.bg-blue-600 { background-color: #2563eb; }
+.bg-blue-700 { background-color: #1d4ed8; }
+.hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-md { border-radius: 0.375rem; }
+</style>
