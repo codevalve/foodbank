@@ -1,6 +1,44 @@
-theme: jekyll-theme-cayman
 title: Food Bank Inventory Management
 description: A modern solution for food bank inventory management
-show_downloads: true
-github:
-  repository_url: https://github.com/codevalve/foodbank
+theme: just-the-docs
+
+url: https://github.com/codevalve/foodbank
+
+# Theme settings
+color_scheme: light
+search_enabled: true
+heading_anchors: true
+
+# External navigation links
+nav_external_links:
+  - title: Food Bank on GitHub
+    url: https://github.com/codevalve/foodbank
+    hide_icon: false
+
+# Footer content
+footer_content: "Copyright &copy; 2024 Food Bank Inventory Management. Distributed under an MIT license."
+
+# Collections for documentation structure
+collections:
+  docs:
+    permalink: "/:collection/:path/"
+    output: true
+
+just_the_docs:
+  # Enable or disable the site search
+  search_enabled: true
+  # Split pages into sections that can be searched individually
+  heading_anchors: true
+  # Color scheme
+  color_scheme: light
+  # Enable or disable the copy code button
+  enable_copy_code_button: true
+  # Maximum number of search results to display
+  search:
+    heading_level: 3
+    previews: 3
+    preview_words_before: 5
+    preview_words_after: 10
+    tokenizer_separator: /[\s/]+/
+    rel_url: true
+    button: false
