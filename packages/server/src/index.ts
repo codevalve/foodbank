@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
 import { createClient } from '@supabase/supabase-js';
 import organizationRoutes from './routes/organizations';
 import userRoutes from './routes/users';
@@ -36,12 +38,21 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// Swagger setup
+if (process.env.NODE_ENV !== 'production') {
+  const swaggerSpec = swaggerJSDoc({
+    definition: require('./docs/swaggerDef'),
+    apis: ['./src/routes/*.ts'],
+  });
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
+
 // Rate limiting
 app.use('/api/', apiLimiter);
 app.use('/api/auth', authLimiter);
 
 // Auth middleware for protected routes
-app.use(authMiddleware);
+app.use('/api', authMiddleware);
 
 // Routes
 app.use('/api/organizations', organizationRoutes);
@@ -61,6 +72,7 @@ app.get('/health', (req, res) => {
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`API Documentation available at http://localhost:${PORT}/api-docs`);
   });
 }
 
