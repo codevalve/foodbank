@@ -1,6 +1,8 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { supabase } from '../index';
 import { AppError } from '../middleware/errorHandler';
+import { AuthenticatedRequest, ApiResponse, InventoryItem, InventoryItemWithStock, InventoryTransaction, InventoryCategory } from '../types';
+import { catchAsync } from '../utils/errors';
 
 const router = express.Router();
 
@@ -29,33 +31,40 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     format: uuid
- *                   name:
- *                     type: string
- *                   category:
- *                     type: string
- *                   quantity:
- *                     type: integer
- *                   unit:
- *                     type: string
- *                   minimum_quantity:
- *                     type: integer
- *                   expiration_date:
- *                     type: string
- *                     format: date-time
- *                   location:
- *                     type: string
- *                   notes:
- *                     type: string
- *                   organization_id:
- *                     type: string
- *                     format: uuid
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       name:
+ *                         type: string
+ *                       category:
+ *                         type: string
+ *                       quantity:
+ *                         type: integer
+ *                       unit:
+ *                         type: string
+ *                       minimum_quantity:
+ *                         type: integer
+ *                       expiration_date:
+ *                         type: string
+ *                         format: date-time
+ *                       location:
+ *                         type: string
+ *                       notes:
+ *                         type: string
+ *                       organization_id:
+ *                         type: string
+ *                         format: uuid
+ *                       current_stock:
+ *                         type: integer
  *       401:
  *         description: Unauthorized
  *       403:
@@ -63,24 +72,46 @@ const router = express.Router();
  *       500:
  *         description: Internal Server Error
  */
-router.get('/', async (req, res, next) => {
-  try {
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .select(`
-        *,
-        category:inventory_categories(name)
-      `)
-      .eq('organization_id', req.user!.organization_id)
-      .order('name');
+router.get('/', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+  const { category, low_stock } = req.query;
+  const organization_id = req.user?.organization_id;
 
-    if (error) throw new AppError('Failed to fetch inventory items', 400);
+  let query = supabase
+    .from('inventory_items')
+    .select(`
+      *,
+      category:inventory_categories(*),
+      current_stock:inventory_transactions(quantity, transaction_type)
+    `)
+    .eq('organization_id', organization_id);
 
-    res.json(data);
-  } catch (error) {
-    next(error);
+  if (category) {
+    query = query.eq('category_id', category);
   }
-});
+
+  const { data: items, error } = await query;
+
+  if (error) {
+    throw new AppError('Failed to fetch inventory items', 500);
+  }
+
+  // Calculate current stock and filter low stock items if requested
+  const inventoryWithStock: InventoryItemWithStock[] = items.map(item => {
+    const currentStock = item.current_stock.reduce((acc: number, trans: { transaction_type: string; quantity: number }) => {
+      return acc + (trans.transaction_type === 'donation_in' ? trans.quantity : -trans.quantity);
+    }, 0);
+    return { ...item, current_stock: currentStock };
+  });
+
+  const response: ApiResponse<InventoryItemWithStock[]> = {
+    success: true,
+    data: low_stock 
+      ? inventoryWithStock.filter(item => item.current_stock <= item.minimum_stock)
+      : inventoryWithStock
+  };
+
+  res.json(response);
+}));
 
 /**
  * @swagger
@@ -163,6 +194,41 @@ router.get('/categories', async (req, res, next) => {
  *     responses:
  *       201:
  *         description: Inventory item created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                     category:
+ *                       type: string
+ *                     quantity:
+ *                       type: integer
+ *                     unit:
+ *                       type: string
+ *                     minimum_quantity:
+ *                       type: integer
+ *                     expiration_date:
+ *                       type: string
+ *                       format: date-time
+ *                     location:
+ *                       type: string
+ *                     notes:
+ *                       type: string
+ *                     organization_id:
+ *                       type: string
+ *                       format: uuid
+ *                 message:
+ *                   type: string
  *       400:
  *         description: Invalid input
  *       401:
@@ -172,40 +238,31 @@ router.get('/categories', async (req, res, next) => {
  *       500:
  *         description: Internal Server Error
  */
-router.post('/', async (req, res, next) => {
-  try {
-    const {
-      name,
-      description,
-      category_id,
-      sku,
-      barcode,
-      unit_type,
-      minimum_stock
-    } = req.body;
+router.post('/', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+  const organization_id = req.user?.organization_id;
+  const newItem: Partial<InventoryItem> = {
+    ...req.body,
+    organization_id: organization_id
+  };
 
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .insert({
-        name,
-        description,
-        category_id,
-        sku,
-        barcode,
-        unit_type,
-        minimum_stock,
-        organization_id: req.user!.organization_id
-      })
-      .select()
-      .single();
+  const { data: item, error } = await supabase
+    .from('inventory_items')
+    .insert([newItem])
+    .select()
+    .single();
 
-    if (error) throw new AppError('Failed to create inventory item', 400);
-
-    res.status(201).json(data);
-  } catch (error) {
-    next(error);
+  if (error) {
+    throw new AppError('Failed to create inventory item', 500);
   }
-});
+
+  const response: ApiResponse<InventoryItem> = {
+    success: true,
+    data: item,
+    message: 'Inventory item created successfully'
+  };
+
+  res.status(201).json(response);
+}));
 
 /**
  * @swagger
@@ -296,54 +353,59 @@ router.post('/transaction', async (req, res, next) => {
  *             schema:
  *               type: object
  *               properties:
- *                 id:
- *                   type: string
- *                   format: uuid
- *                 name:
- *                   type: string
- *                 category:
- *                   type: string
- *                 quantity:
- *                   type: integer
- *                 unit:
- *                   type: string
- *                 minimum_quantity:
- *                   type: integer
- *                 expiration_date:
- *                   type: string
- *                   format: date-time
- *                 location:
- *                   type: string
- *                 notes:
- *                   type: string
- *                 organization_id:
- *                   type: string
- *                   format: uuid
- *                 current_stock:
- *                   type: integer
- *                 recent_transactions:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         format: uuid
- *                       item_id:
- *                         type: string
- *                         format: uuid
- *                       transaction_type:
- *                         type: string
- *                       quantity:
- *                         type: integer
- *                       notes:
- *                         type: string
- *                       user_id:
- *                         type: string
- *                         format: uuid
- *                       transaction_date:
- *                         type: string
- *                         format: date-time
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                     category:
+ *                       type: string
+ *                     quantity:
+ *                       type: integer
+ *                     unit:
+ *                       type: string
+ *                     minimum_quantity:
+ *                       type: integer
+ *                     expiration_date:
+ *                       type: string
+ *                       format: date-time
+ *                     location:
+ *                       type: string
+ *                     notes:
+ *                       type: string
+ *                     organization_id:
+ *                       type: string
+ *                       format: uuid
+ *                     current_stock:
+ *                       type: integer
+ *                     recent_transactions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           item_id:
+ *                             type: string
+ *                             format: uuid
+ *                           transaction_type:
+ *                             type: string
+ *                           quantity:
+ *                             type: integer
+ *                           notes:
+ *                             type: string
+ *                           user_id:
+ *                             type: string
+ *                             format: uuid
+ *                           transaction_date:
+ *                             type: string
+ *                             format: date-time
  *       401:
  *         description: Unauthorized
  *       403:
@@ -353,47 +415,42 @@ router.post('/transaction', async (req, res, next) => {
  *       500:
  *         description: Internal Server Error
  */
-router.get('/:id', async (req, res, next) => {
-  try {
-    const [itemResult, transactionsResult] = await Promise.all([
-      supabase
-        .from('inventory_items')
-        .select(`
-          *,
-          category:inventory_categories(name)
-        `)
-        .eq('id', req.params.id)
-        .eq('organization_id', req.user!.organization_id)
-        .single(),
-      supabase
-        .from('inventory_transactions')
-        .select(`
-          *,
-          user:users(first_name, last_name)
-        `)
-        .eq('item_id', req.params.id)
-        .order('transaction_date', { ascending: false })
-        .limit(10)
-    ]);
+router.get('/:id', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  const organization_id = req.user?.organization_id;
 
-    if (itemResult.error) throw new AppError('Failed to fetch inventory item', 400);
-    if (!itemResult.data) throw new AppError('Inventory item not found', 404);
+  const [itemResult, transactionsResult] = await Promise.all([
+    supabase
+      .from('inventory_items')
+      .select(`
+        *,
+        category:inventory_categories(*)
+      `)
+      .eq('id', id)
+      .eq('organization_id', organization_id)
+      .single(),
+    supabase
+      .from('inventory_transactions')
+      .select('*')
+      .eq('item_id', id)
+      .order('transaction_date', { ascending: false })
+      .limit(10)
+  ]);
 
-    // Calculate current stock level
-    const transactions = transactionsResult.data || [];
-    const stockLevel = transactions.reduce((total, trans) => {
-      return total + (trans.transaction_type === 'donation_in' ? trans.quantity : -trans.quantity);
-    }, 0);
-
-    res.json({
-      ...itemResult.data,
-      current_stock: stockLevel,
-      recent_transactions: transactions
-    });
-  } catch (error) {
-    next(error);
+  if (itemResult.error || !itemResult.data) {
+    throw new AppError('Inventory item not found', 404);
   }
-});
+
+  const response: ApiResponse<InventoryItemWithStock> = {
+    success: true,
+    data: {
+      ...itemResult.data,
+      recent_transactions: transactionsResult.data || []
+    }
+  };
+
+  res.json(response);
+}));
 
 /**
  * @swagger
@@ -444,6 +501,39 @@ router.get('/:id', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Inventory item updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                     category:
+ *                       type: string
+ *                     quantity:
+ *                       type: integer
+ *                     unit:
+ *                       type: string
+ *                     minimum_quantity:
+ *                       type: integer
+ *                     expiration_date:
+ *                       type: string
+ *                       format: date-time
+ *                     location:
+ *                       type: string
+ *                     notes:
+ *                       type: string
+ *                     organization_id:
+ *                       type: string
+ *                       format: uuid
  *       400:
  *         description: Invalid input
  *       401:

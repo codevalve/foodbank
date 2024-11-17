@@ -1,14 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject } from 'zod';
-import { AppError } from '../utils/errors';
+import { z } from 'zod';
+import { ValidationError } from '../utils/errors';
 
-export const validate = (schema: AnyZodObject) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const validate = (schema: z.Schema) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     try {
-      await schema.parseAsync(req.body);
+      schema.parse(req.body);
       next();
     } catch (error) {
-      next(new AppError('Invalid input data', 400));
+      if (error instanceof z.ZodError) {
+        next(new ValidationError(error.issues[0].message));
+      } else {
+        next(error);
+      }
     }
   };
 };

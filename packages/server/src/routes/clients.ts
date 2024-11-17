@@ -1,9 +1,10 @@
 import { Router } from 'express';
+import { Response } from 'express';
 import { supabase } from '../index';
 import { validate } from '../middleware/validation';
 import { clientSchema } from '../schemas';
 import { catchAsync } from '../utils/errors';
-import { AuthenticatedRequest, Client } from '../types';
+import { AuthenticatedRequest, ApiResponse, Client, ClientVisit } from '../types';
 
 const router = Router();
 
@@ -15,69 +16,24 @@ const router = Router();
  *     summary: Get all clients for the organization
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: household_size_min
- *         schema:
- *           type: integer
- *         description: Filter by minimum household size
- *       - in: query
- *         name: income_level
- *         schema:
- *           type: string
- *         description: Filter by income level
  *     responses:
  *       200:
  *         description: List of clients
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     format: uuid
- *                   first_name:
- *                     type: string
- *                   last_name:
- *                     type: string
- *                   email:
- *                     type: string
- *                     format: email
- *                   phone:
- *                     type: string
- *                   address:
- *                     type: string
- *                   household_size:
- *                     type: integer
- *                   income_level:
- *                     type: string
- *                   dietary_restrictions:
- *                     type: array
- *                     items:
- *                       type: string
- *                   notes:
- *                     type: string
- *                   organization_id:
- *                     type: string
- *                     format: uuid
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       500:
- *         description: Internal Server Error
  */
-router.get('/', catchAsync(async (req: AuthenticatedRequest, res) => {
+router.get('/', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
   const { data, error } = await supabase
     .from('clients')
     .select('*')
-    .eq('organization_id', req.user!.organizationId);
+    .eq('organization_id', req.user!.organization_id);
 
   if (error) throw error;
-  res.json(data);
+
+  const response: ApiResponse<Client[]> = {
+    success: true,
+    data: data as Client[] || []
+  };
+
+  res.json(response);
 }));
 
 /**
@@ -88,73 +44,31 @@ router.get('/', catchAsync(async (req: AuthenticatedRequest, res) => {
  *     summary: Get client by ID
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Client ID
- *     responses:
- *       200:
- *         description: Client details
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                   format: uuid
- *                 first_name:
- *                   type: string
- *                 last_name:
- *                   type: string
- *                 email:
- *                   type: string
- *                   format: email
- *                 phone:
- *                   type: string
- *                 address:
- *                   type: string
- *                 household_size:
- *                   type: integer
- *                 income_level:
- *                   type: string
- *                 dietary_restrictions:
- *                   type: array
- *                   items:
- *                     type: string
- *                 notes:
- *                   type: string
- *                 organization_id:
- *                   type: string
- *                   format: uuid
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       404:
- *         description: Client not found
- *       500:
- *         description: Internal Server Error
  */
-router.get('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
+router.get('/:id', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
   const { data, error } = await supabase
     .from('clients')
     .select('*')
-    .eq('organization_id', req.user!.organizationId)
+    .eq('organization_id', req.user!.organization_id)
     .eq('id', req.params.id)
     .single();
 
   if (error) throw error;
   if (!data) {
-    res.status(404).json({ message: 'Client not found' });
+    const response: ApiResponse<null> = {
+      success: false,
+      error: 'Client not found'
+    };
+    res.status(404).json(response);
     return;
   }
 
-  res.json(data);
+  const response: ApiResponse<Client> = {
+    success: true,
+    data: data as Client
+  };
+
+  res.json(response);
 }));
 
 /**
@@ -165,58 +79,11 @@ router.get('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
  *     summary: Create a new client
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - first_name
- *               - last_name
- *               - phone
- *               - address
- *               - household_size
- *               - income_level
- *             properties:
- *               first_name:
- *                 type: string
- *               last_name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phone:
- *                 type: string
- *               address:
- *                 type: string
- *               household_size:
- *                 type: integer
- *                 minimum: 1
- *               income_level:
- *                 type: string
- *               dietary_restrictions:
- *                 type: array
- *                 items:
- *                   type: string
- *               notes:
- *                 type: string
- *     responses:
- *       201:
- *         description: Client created successfully
- *       400:
- *         description: Invalid input
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       500:
- *         description: Internal Server Error
  */
-router.post('/', validate(clientSchema), catchAsync(async (req: AuthenticatedRequest, res) => {
+router.post('/', validate(clientSchema), catchAsync(async (req: AuthenticatedRequest, res: Response) => {
   const newClient: Partial<Client> = {
     ...req.body,
-    organization_id: req.user!.organizationId,
+    organization_id: req.user!.organization_id,
     status: 'active',
   };
 
@@ -227,7 +94,14 @@ router.post('/', validate(clientSchema), catchAsync(async (req: AuthenticatedReq
     .single();
 
   if (error) throw error;
-  res.status(201).json(data);
+
+  const response: ApiResponse<Client> = {
+    success: true,
+    data: data as Client,
+    message: 'Client created successfully'
+  };
+
+  res.status(201).json(response);
 }));
 
 /**
@@ -238,80 +112,33 @@ router.post('/', validate(clientSchema), catchAsync(async (req: AuthenticatedReq
  *     summary: Update a client
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Client ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - first_name
- *               - last_name
- *               - phone
- *               - address
- *               - household_size
- *               - income_level
- *             properties:
- *               first_name:
- *                 type: string
- *               last_name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phone:
- *                 type: string
- *               address:
- *                 type: string
- *               household_size:
- *                 type: integer
- *                 minimum: 1
- *               income_level:
- *                 type: string
- *               dietary_restrictions:
- *                 type: array
- *                 items:
- *                   type: string
- *               notes:
- *                 type: string
- *     responses:
- *       200:
- *         description: Client updated successfully
- *       400:
- *         description: Invalid input
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       404:
- *         description: Client not found
- *       500:
- *         description: Internal Server Error
  */
-router.put('/:id', validate(clientSchema), catchAsync(async (req: AuthenticatedRequest, res) => {
+router.put('/:id', validate(clientSchema), catchAsync(async (req: AuthenticatedRequest, res: Response) => {
   const { data, error } = await supabase
     .from('clients')
     .update(req.body)
-    .eq('organization_id', req.user!.organizationId)
+    .eq('organization_id', req.user!.organization_id)
     .eq('id', req.params.id)
     .select()
     .single();
 
   if (error) throw error;
   if (!data) {
-    res.status(404).json({ message: 'Client not found' });
+    const response: ApiResponse<null> = {
+      success: false,
+      error: 'Client not found'
+    };
+    res.status(404).json(response);
     return;
   }
 
-  res.json(data);
+  const response: ApiResponse<Client> = {
+    success: true,
+    data: data as Client,
+    message: 'Client updated successfully'
+  };
+
+  res.json(response);
 }));
 
 /**
@@ -319,45 +146,35 @@ router.put('/:id', validate(clientSchema), catchAsync(async (req: AuthenticatedR
  * /api/clients/{id}:
  *   delete:
  *     tags: [Clients]
- *     summary: Delete a client (soft delete by setting status to inactive)
+ *     summary: Delete a client (soft delete)
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Client ID
- *     responses:
- *       200:
- *         description: Client deactivated successfully
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       404:
- *         description: Client not found
- *       500:
- *         description: Internal Server Error
  */
-router.delete('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
+router.delete('/:id', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
   const { data, error } = await supabase
     .from('clients')
     .update({ status: 'inactive' })
-    .eq('organization_id', req.user!.organizationId)
+    .eq('organization_id', req.user!.organization_id)
     .eq('id', req.params.id)
     .select()
     .single();
 
   if (error) throw error;
   if (!data) {
-    res.status(404).json({ message: 'Client not found' });
+    const response: ApiResponse<null> = {
+      success: false,
+      error: 'Client not found'
+    };
+    res.status(404).json(response);
     return;
   }
 
-  res.status(200).json({ message: 'Client deactivated successfully' });
+  const response: ApiResponse<null> = {
+    success: true,
+    message: 'Client deactivated successfully'
+  };
+
+  res.status(200).json(response);
 }));
 
 /**
@@ -368,51 +185,23 @@ router.delete('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
  *     summary: Get client visit history
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Client ID
- *     responses:
- *       200:
- *         description: List of client visits
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     format: uuid
- *                   visit_date:
- *                     type: string
- *                     format: date-time
- *                   notes:
- *                     type: string
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       404:
- *         description: Client not found
- *       500:
- *         description: Internal Server Error
  */
-router.get('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res) => {
+router.get('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
   const { data, error } = await supabase
     .from('client_visits')
     .select('*')
-    .eq('organization_id', req.user!.organizationId)
+    .eq('organization_id', req.user!.organization_id)
     .eq('client_id', req.params.id)
     .order('visit_date', { ascending: false });
 
   if (error) throw error;
-  res.json(data || []);
+
+  const response: ApiResponse<ClientVisit[]> = {
+    success: true,
+    data: data as ClientVisit[] || []
+  };
+
+  res.json(response);
 }));
 
 /**
@@ -423,46 +212,11 @@ router.get('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res) => {
  *     summary: Record a new client visit
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Client ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - notes
- *             properties:
- *               notes:
- *                 type: string
- *               served_by:
- *                 type: string
- *                 format: uuid
- *     responses:
- *       201:
- *         description: Visit recorded successfully
- *       400:
- *         description: Invalid input
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       404:
- *         description: Client not found
- *       500:
- *         description: Internal Server Error
  */
-router.post('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res) => {
-  const visit = {
+router.post('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+  const visit: Partial<ClientVisit> = {
     client_id: req.params.id,
-    organization_id: req.user!.organizationId,
+    organization_id: req.user!.organization_id,
     visit_date: new Date(),
     notes: req.body.notes,
     served_by: req.user!.id,
@@ -475,7 +229,14 @@ router.post('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res) => 
     .single();
 
   if (error) throw error;
-  res.status(201).json(data);
+
+  const response: ApiResponse<ClientVisit> = {
+    success: true,
+    data: data as ClientVisit,
+    message: 'Visit recorded successfully'
+  };
+
+  res.status(201).json(response);
 }));
 
 export default router;

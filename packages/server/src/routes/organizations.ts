@@ -1,6 +1,7 @@
-import express from 'express';
-import { supabase } from '../index';
-import { AppError } from '../middleware/errorHandler';
+import express, { Response, NextFunction } from 'express';
+import { supabase } from '../db';
+import { AuthenticatedRequest, ApiResponse, Organization, InventoryTransaction } from '../types';
+import { catchAsync } from '../utils/errors';
 
 const router = express.Router();
 
@@ -8,8 +9,8 @@ const router = express.Router();
  * @swagger
  * /api/organizations:
  *   get:
- *     tags: [Organizations]
  *     summary: Get organization details
+ *     tags: [Organizations]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -18,55 +19,47 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                   format: uuid
- *                 name:
- *                   type: string
- *                 address:
- *                   type: string
- *                 phone:
- *                   type: string
- *                 email:
- *                   type: string
- *                   format: email
- *                 website:
- *                   type: string
- *                   format: uri
+ *               $ref: '#/components/schemas/Organization'
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden - User does not have admin privileges
+ *         description: Forbidden
  *       404:
  *         description: Organization not found
  *       500:
  *         description: Internal Server Error
  */
-router.get('/', async (req, res, next) => {
-  try {
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', req.user!.organization_id)
-      .single();
+router.get('/', catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const organizationId = req.user?.organization_id;
 
-    if (error) throw new AppError('Failed to fetch organization', 400);
-    if (!data) throw new AppError('Organization not found', 404);
+  const { data: organization, error } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', organizationId)
+    .single();
 
-    res.json(data);
-  } catch (error) {
-    next(error);
+  if (error) {
+    throw error;
   }
-});
+
+  if (!organization) {
+    throw new Error('Organization not found');
+  }
+
+  const response: ApiResponse<Organization> = {
+    success: true,
+    data: organization,
+  };
+
+  res.json(response);
+}));
 
 /**
  * @swagger
  * /api/organizations:
  *   put:
- *     tags: [Organizations]
  *     summary: Update organization details
+ *     tags: [Organizations]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -74,69 +67,53 @@ router.get('/', async (req, res, next) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - name
- *               - address
- *               - phone
- *               - email
- *             properties:
- *               name:
- *                 type: string
- *               address:
- *                 type: string
- *               phone:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               website:
- *                 type: string
- *                 format: uri
+ *             $ref: '#/components/schemas/Organization'
  *     responses:
  *       200:
  *         description: Organization updated successfully
- *       400:
- *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Organization'
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden - User does not have admin privileges
+ *         description: Forbidden
  *       404:
  *         description: Organization not found
  *       500:
  *         description: Internal Server Error
  */
-router.put('/', async (req, res, next) => {
-  try {
-    if (req.user!.role !== 'admin') {
-      throw new AppError('Only admins can update organization details', 403);
-    }
+router.put('/', catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const organizationId = req.user?.organization_id;
+  const updates = req.body;
 
-    const { name, address, phone, email, website } = req.body;
+  const { data: organization, error } = await supabase
+    .from('organizations')
+    .update(updates)
+    .eq('id', organizationId)
+    .select()
+    .single();
 
-    const { data, error } = await supabase
-      .from('organizations')
-      .update({ name, address, phone, email, website })
-      .eq('id', req.user!.organization_id)
-      .select()
-      .single();
-
-    if (error) throw new AppError('Failed to update organization', 400);
-    if (!data) throw new AppError('Organization not found', 404);
-
-    res.json(data);
-  } catch (error) {
-    next(error);
+  if (error) {
+    throw error;
   }
-});
+
+  const response: ApiResponse<Organization> = {
+    success: true,
+    data: organization,
+    message: 'Organization updated successfully',
+  };
+
+  res.json(response);
+}));
 
 /**
  * @swagger
  * /api/organizations/stats:
  *   get:
- *     tags: [Organizations]
  *     summary: Get organization statistics
+ *     tags: [Organizations]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -147,93 +124,66 @@ router.put('/', async (req, res, next) => {
  *             schema:
  *               type: object
  *               properties:
- *                 stats:
- *                   type: object
- *                   properties:
- *                     volunteers:
- *                       type: integer
- *                     clients:
- *                       type: integer
- *                     inventory:
- *                       type: integer
+ *                 clientCount:
+ *                   type: number
+ *                 volunteerCount:
+ *                   type: number
+ *                 inventoryCount:
+ *                   type: number
  *                 recentActivity:
  *                   type: array
  *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         format: uuid
- *                       transaction_type:
- *                         type: string
- *                       quantity:
- *                         type: integer
- *                       transaction_date:
- *                         type: string
- *                         format: date-time
- *                       inventory_items:
- *                         type: object
- *                         properties:
- *                           name:
- *                             type: string
+ *                     $ref: '#/components/schemas/InventoryTransaction'
  *       401:
  *         description: Unauthorized
  *       403:
  *         description: Forbidden
- *       404:
- *         description: Organization not found
  *       500:
  *         description: Internal Server Error
  */
-router.get('/stats', async (req, res, next) => {
-  try {
-    const orgId = req.user!.organization_id;
+router.get('/stats', catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const organizationId = req.user?.organization_id;
 
-    // Get counts from different tables
-    const [
-      { count: volunteersCount },
-      { count: clientsCount },
-      { count: inventoryCount }
-    ] = await Promise.all([
-      supabase
-        .from('volunteers')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', orgId),
-      supabase
-        .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', orgId),
-      supabase
-        .from('inventory_items')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
-    ]);
-
-    // Get recent activity
-    const { data: recentTransactions } = await supabase
+  const [clientsResult, volunteersResult, inventoryResult, transactionsResult] = await Promise.all([
+    supabase
+      .from('clients')
+      .select('id', { count: 'exact' })
+      .eq('organization_id', organizationId),
+    supabase
+      .from('volunteers')
+      .select('id', { count: 'exact' })
+      .eq('organization_id', organizationId),
+    supabase
+      .from('inventory_items')
+      .select('id', { count: 'exact' })
+      .eq('organization_id', organizationId),
+    supabase
       .from('inventory_transactions')
       .select(`
-        id,
-        transaction_type,
-        quantity,
-        transaction_date,
+        *,
         inventory_items (name)
       `)
-      .eq('organization_id', orgId)
+      .eq('organization_id', organizationId)
       .order('transaction_date', { ascending: false })
-      .limit(5);
+      .limit(10),
+  ]);
 
-    res.json({
-      stats: {
-        volunteers: volunteersCount,
-        clients: clientsCount,
-        inventory: inventoryCount
-      },
-      recentActivity: recentTransactions
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  const response: ApiResponse<{
+    clientCount: number;
+    volunteerCount: number;
+    inventoryCount: number;
+    recentActivity: InventoryTransaction[];
+  }> = {
+    success: true,
+    data: {
+      clientCount: clientsResult.count || 0,
+      volunteerCount: volunteersResult.count || 0,
+      inventoryCount: inventoryResult.count || 0,
+      recentActivity: transactionsResult.data || [],
+    },
+  };
+
+  res.json(response);
+}));
 
 export default router;
