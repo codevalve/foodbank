@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
+import logo from '../../assets/images/FoodBank - Logo - Blue - Transparent.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/' },
@@ -18,7 +19,9 @@ export function Navigation() {
       <div className="container mx-auto px-8">
         <div className="flex h-20 items-center justify-between">
           <div className="flex items-center flex-shrink-0">
-            <span className="text-3xl font-bold text-blue-600">FoodBank</span>
+            <Link to="/" className="flex items-center">
+              <img src={logo} alt="FoodBank Logo" className="h-12 w-auto" />
+            </Link>
           </div>
           <div className="hidden md:block flex-grow px-12">
             <div className="flex space-x-12">
