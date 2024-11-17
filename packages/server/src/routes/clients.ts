@@ -7,7 +7,69 @@ import { AuthenticatedRequest, Client } from '../types';
 
 const router = Router();
 
-// Get all clients for an organization
+/**
+ * @swagger
+ * /api/clients:
+ *   get:
+ *     tags: [Clients]
+ *     summary: Get all clients for the organization
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: household_size_min
+ *         schema:
+ *           type: integer
+ *         description: Filter by minimum household size
+ *       - in: query
+ *         name: income_level
+ *         schema:
+ *           type: string
+ *         description: Filter by income level
+ *     responses:
+ *       200:
+ *         description: List of clients
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     format: uuid
+ *                   first_name:
+ *                     type: string
+ *                   last_name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                   phone:
+ *                     type: string
+ *                   address:
+ *                     type: string
+ *                   household_size:
+ *                     type: integer
+ *                   income_level:
+ *                     type: string
+ *                   dietary_restrictions:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   notes:
+ *                     type: string
+ *                   organization_id:
+ *                     type: string
+ *                     format: uuid
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/', catchAsync(async (req: AuthenticatedRequest, res) => {
   const { data, error } = await supabase
     .from('clients')
@@ -18,7 +80,66 @@ router.get('/', catchAsync(async (req: AuthenticatedRequest, res) => {
   res.json(data);
 }));
 
-// Get a specific client
+/**
+ * @swagger
+ * /api/clients/{id}:
+ *   get:
+ *     tags: [Clients]
+ *     summary: Get client by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Client ID
+ *     responses:
+ *       200:
+ *         description: Client details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 first_name:
+ *                   type: string
+ *                 last_name:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                 phone:
+ *                   type: string
+ *                 address:
+ *                   type: string
+ *                 household_size:
+ *                   type: integer
+ *                 income_level:
+ *                   type: string
+ *                 dietary_restrictions:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 notes:
+ *                   type: string
+ *                 organization_id:
+ *                   type: string
+ *                   format: uuid
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Client not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
   const { data, error } = await supabase
     .from('clients')
@@ -36,7 +157,62 @@ router.get('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
   res.json(data);
 }));
 
-// Create a new client
+/**
+ * @swagger
+ * /api/clients:
+ *   post:
+ *     tags: [Clients]
+ *     summary: Create a new client
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - first_name
+ *               - last_name
+ *               - phone
+ *               - address
+ *               - household_size
+ *               - income_level
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *               last_name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               household_size:
+ *                 type: integer
+ *                 minimum: 1
+ *               income_level:
+ *                 type: string
+ *               dietary_restrictions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Client created successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal Server Error
+ */
 router.post('/', validate(clientSchema), catchAsync(async (req: AuthenticatedRequest, res) => {
   const newClient: Partial<Client> = {
     ...req.body,
@@ -54,7 +230,72 @@ router.post('/', validate(clientSchema), catchAsync(async (req: AuthenticatedReq
   res.status(201).json(data);
 }));
 
-// Update a client
+/**
+ * @swagger
+ * /api/clients/{id}:
+ *   put:
+ *     tags: [Clients]
+ *     summary: Update a client
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Client ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - first_name
+ *               - last_name
+ *               - phone
+ *               - address
+ *               - household_size
+ *               - income_level
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *               last_name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               household_size:
+ *                 type: integer
+ *                 minimum: 1
+ *               income_level:
+ *                 type: string
+ *               dietary_restrictions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Client updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Client not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.put('/:id', validate(clientSchema), catchAsync(async (req: AuthenticatedRequest, res) => {
   const { data, error } = await supabase
     .from('clients')
@@ -73,7 +314,34 @@ router.put('/:id', validate(clientSchema), catchAsync(async (req: AuthenticatedR
   res.json(data);
 }));
 
-// Delete a client (soft delete by setting status to inactive)
+/**
+ * @swagger
+ * /api/clients/{id}:
+ *   delete:
+ *     tags: [Clients]
+ *     summary: Delete a client (soft delete by setting status to inactive)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Client ID
+ *     responses:
+ *       200:
+ *         description: Client deactivated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Client not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.delete('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
   const { data, error } = await supabase
     .from('clients')
@@ -92,7 +360,49 @@ router.delete('/:id', catchAsync(async (req: AuthenticatedRequest, res) => {
   res.status(200).json({ message: 'Client deactivated successfully' });
 }));
 
-// Get client visit history
+/**
+ * @swagger
+ * /api/clients/{id}/visits:
+ *   get:
+ *     tags: [Clients]
+ *     summary: Get client visit history
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Client ID
+ *     responses:
+ *       200:
+ *         description: List of client visits
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     format: uuid
+ *                   visit_date:
+ *                     type: string
+ *                     format: date-time
+ *                   notes:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Client not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res) => {
   const { data, error } = await supabase
     .from('client_visits')
@@ -105,7 +415,50 @@ router.get('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res) => {
   res.json(data || []);
 }));
 
-// Record a new client visit
+/**
+ * @swagger
+ * /api/clients/{id}/visits:
+ *   post:
+ *     tags: [Clients]
+ *     summary: Record a new client visit
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Client ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - notes
+ *             properties:
+ *               notes:
+ *                 type: string
+ *               served_by:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       201:
+ *         description: Visit recorded successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Client not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.post('/:id/visits', catchAsync(async (req: AuthenticatedRequest, res) => {
   const visit = {
     client_id: req.params.id,
