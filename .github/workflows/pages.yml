@@ -36,9 +36,11 @@ jobs:
         id: pages
         uses: actions/configure-pages@v4
         
-      - name: Build with Jekyll
+      - name: Build site
         working-directory: docs
-        run: bundle install && bundle exec jekyll build
+        run: |
+          bundle install
+          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: production
           
