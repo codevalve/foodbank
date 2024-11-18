@@ -2,40 +2,47 @@
 layout: home
 title: Home
 nav_order: 1
+description: "Food Bank Inventory Management System Documentation"
+permalink: /
 ---
 
+<div class="hero-section">
+  <img src="/assets/images/FoodBank - Logo - Blue - Transparent.png" alt="Food Bank Manager Logo" class="hero-logo">
+</div>
+
 # Food Bank Inventory Management
+{: .fs-9 }
 
-A modern, efficient, and user-friendly inventory management system for food banks.
-
+A modern, open-source inventory management system designed specifically for food banks.
 {: .fs-6 .fw-300 }
 
-[Get Started]({% link _docs/getting-started.md %}){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Get Started](/docs/user-guide/getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/codevalve/foodbank){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
 
 ## About the Project
 
-The Food Bank Inventory Management System is designed to streamline food bank operations and maximize community impact. Our system provides:
+The Food Bank Inventory Management System is a collaborative project between CodeValve and Codeium, built using Windsurf's Cascade AI assistant. [Learn more about our collaboration](/docs/about).
 
-### Real-time Tracking
-{: .fs-5 }
-Monitor stock levels, receive alerts, and manage inventory in real-time with our powerful dashboard.
+## Quick Links
 
-### Smart Analytics
-{: .fs-5 }
-Make informed decisions with detailed insights into inventory trends and usage patterns.
+- [Project Requirements](/docs/project/requirements)
+- [Technical Documentation](/docs/technical)
+- [API Reference](/docs/technical/api-reference)
+- [Contributing Guidelines](https://github.com/codevalve/foodbank/blob/main/CONTRIBUTING.md)
 
-### Multi-tenant Support
-{: .fs-5 }
-Manage multiple locations with ease using our multi-tenant architecture.
+## Key Features
 
----
+- **Multi-tenant Support**: Manage multiple food bank locations from a single platform
+- **Inventory Tracking**: Real-time tracking of food items, expiration dates, and stock levels
+- **Donation Management**: Track and manage donations from various sources
+- **Distribution Planning**: Plan and track food distribution to those in need
+- **Reporting**: Generate detailed reports on inventory, donations, and distribution
 
 ## Getting Started
 
-Get started quickly by following our [installation guide]({% link _docs/getting-started.md %}).
+Get started quickly by following our [installation guide](/docs/user-guide/getting-started).
 
 ## Contributing
 

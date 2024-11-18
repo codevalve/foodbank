@@ -1,7 +1,9 @@
 ---
 layout: default
 title: Getting Started
+parent: User Guide
 nav_order: 1
+permalink: /docs/user-guide/getting-started
 ---
 
 # Getting Started with Food Bank Inventory Management
