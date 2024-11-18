@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
-gem "jekyll", "~> 4.3.2"
-gem "just-the-docs", "~> 0.7.0"
+gem "jekyll", "~> 4.3.4"
+gem "just-the-docs", "0.10.0"
 
 group :jekyll_plugins do
   gem "jekyll-default-layout"
@@ -19,3 +19,6 @@ end
 # Lock `http_parser.rb` gem to `v0.6.x` on JRuby builds since newer versions of the gem
 # do not have a Java counterpart.
 gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
+
+# Required when using Ruby >= 3 and Jekyll <= 4.2.2
+gem "webrick"
